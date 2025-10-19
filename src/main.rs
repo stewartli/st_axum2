@@ -8,7 +8,7 @@ use axum::{
 };
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
-use tower_http::services::ServeDir;
+use tower_http::{services::ServeDir, trace::{self, TraceLayer}};
 use askama::{self, Template};
 
 // 01. openapi
@@ -111,8 +111,14 @@ async fn main() {
         .merge(SwaggerUi::new("/api-docs").url("/api-docs/openapi.json", api_docs))
         // http://localhost:8686/static/app.css
         .nest_service("/static", ServeDir::new("static"))
+        // http://localhost:8686/ab
         .layer(from_fn(handle_500))
-        .fallback(handle_404);
+        .fallback(handle_404)
+        .layer(
+            TraceLayer::new_for_http()
+                .make_span_with(trace::DefaultMakeSpan::new().level(tracing::Level::INFO))
+                .on_response(trace::DefaultOnResponse::new().level(tracing::Level::INFO)),
+        );
 
     // 3.3. server
     tracing::info!("starting server at {}", addr);
