@@ -107,7 +107,9 @@ async fn main() {
 
     // 3.2. axum app
     let app = route_hello()
-        .merge(SwaggerUi::new("api-docs").url("/api-docs/openapi.json", api_docs))
+        // http://localhost:8686/api-docs/
+        .merge(SwaggerUi::new("/api-docs").url("/api-docs/openapi.json", api_docs))
+        // http://localhost:8686/static/app.css
         .nest_service("/static", ServeDir::new("static"))
         .layer(from_fn(handle_500))
         .fallback(handle_404);
