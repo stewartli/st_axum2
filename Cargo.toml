@@ -10,4 +10,6 @@ tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.20", features = ["env-filter"] }
 utoipa-swagger-ui = {version = "9.0.2", features = ["axum"]}
 utoipa = {version = "5.4.0", features = ["axum_extras"]}
+tower-http = { version = "0.6.6", features = ["fs", "trace"] }
+askama = "0.14.0"
 

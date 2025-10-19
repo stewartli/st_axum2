@@ -1,6 +1,15 @@
-use axum::{Router, response::IntoResponse, routing::get};
+use axum::{
+    extract::Request, 
+    http::StatusCode, 
+    middleware::{from_fn, Next}, 
+    response::{Html, IntoResponse}, 
+    routing::get, 
+    Router, 
+};
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
+use tower_http::services::ServeDir;
+use askama::{self, Template};
 
 // 01. openapi
 #[derive(OpenApi)]
@@ -26,7 +35,37 @@ async fn handle_hello() -> impl IntoResponse {
     "hello wrold from landing page"
 }
 
-// 03. shutdown
+// 03. template 
+#[derive(Template)]
+#[template(path = "page.html")]
+struct MyPageTemplate{
+    title: String, 
+    ctx: Option<String>, 
+}
+
+async fn handle_500(req: Request, next: Next) -> impl IntoResponse{
+    let res = next.run(req).await;
+    match res.status(){
+        StatusCode::INTERNAL_SERVER_ERROR => {
+            let tmp = MyPageTemplate{
+                title: String::from("server error"),
+                ctx: Some(String::from("try later")),
+            };
+            (StatusCode::INTERNAL_SERVER_ERROR, Html(tmp.render().unwrap())).into_response()
+        }
+        _ => res,
+    }
+}
+
+async fn handle_404() -> impl IntoResponse{
+    let tmp = MyPageTemplate{
+        title: String::from("not found"),
+        ctx: Some(String::from("unfound url")),
+    };
+    (StatusCode::NOT_FOUND, Html(tmp.render().unwrap())).into_response()
+}
+
+// 04. shutdown
 async fn shutdown_signal() {
     let ctrl_c = async {
         tokio::signal::ctrl_c().await.unwrap();
@@ -68,7 +107,10 @@ async fn main() {
 
     // 3.2. axum app
     let app = route_hello()
-        .merge(SwaggerUi::new("api-docs").url("/api-docs/openapi.json", api_docs));
+        .merge(SwaggerUi::new("api-docs").url("/api-docs/openapi.json", api_docs))
+        .nest_service("/static", ServeDir::new("static"))
+        .layer(from_fn(handle_500))
+        .fallback(handle_404);
 
     // 3.3. server
     tracing::info!("starting server at {}", addr);
