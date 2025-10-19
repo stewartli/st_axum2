@@ -1,0 +1,13 @@
+[package]
+name = "st_axum2"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+axum = { version = "0.8.6", features = ["macros", "ws"] }
+tokio = { version = "1.48.0", features = ["full"] }
+tracing = "0.1.41"
+tracing-subscriber = { version = "0.3.20", features = ["env-filter"] }
+utoipa-swagger-ui = {version = "9.0.2", features = ["axum"]}
+utoipa = {version = "5.4.0", features = ["axum_extras"]}
+
